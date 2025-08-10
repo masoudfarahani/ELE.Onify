@@ -57,6 +57,7 @@ Onify ships with a few simple built-in handlers:
 - `removeClass(className)`
 
 ## 🚀 Full Example
+[demo](https://masoudfarahani.github.io/ELE.Onify/)
 
 ```html
 <!DOCTYPE html>
