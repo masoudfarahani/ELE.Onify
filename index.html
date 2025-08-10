@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fa">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic Binding Example</title>
+
+    <style>
+        .highlight {
+            background: yellow !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="mydiv" data-bind="on event1:customAlert('hello world');
+    on event2 : hide;
+    on event3:show ,setText('new text');
+    on event3: toggleClass('highlight')
+    ">my Content</div>
+
+    <div style="display: none;" data-bind="on startAjax:show;on endAjax:hide">
+        Loading...
+    </div>
+
+    <button onclick="Context.raiseEvent('event2')">hide</button>
+    <button onclick="Context.raiseEvent('event3')">show</button>
+    <button onclick="Context.raiseEvent('event1')">alert</button>
+
+    <button onclick="myAjaxCall()">ajax call</button>
+
+
+
+    <script src="eleOnify.js"></script>
+    <script>
+
+        Context.addHandler(customAlert);
+
+
+        async function myAjaxCall() {
+            Context.raiseEvent('startAjax')
+            console.log("start ...");
+            fetch('https://jsonplaceholder.typicode.com/posts/1')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.status);
+                    }
+                    return response.json();  
+                })
+                .then(data => {
+                    console.log('Data recived :', data);
+                })
+                .catch(error => {
+                    console.error('some error occured : ', error);
+                });
+            console.log("start delay ...");
+            await delay(5000);
+
+            Context.raiseEvent('endAjax')
+
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+
+
+        function customAlert(message1) {
+            alert(message1);
+        }
+    </script>
+
+</body>
+
+</html>
