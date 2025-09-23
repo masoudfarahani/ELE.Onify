@@ -69,6 +69,11 @@
 
         function customAlert(message1) {
             alert(message1);
+            var elem =document.createElement("div");
+            elem.setAttribute('data-bind','on event2 : hide;on event3:show')
+            elem.textContent="new element";
+            document.body.appendChild(elem);
+            Context.cacheBindings();
         }
     </script>
 

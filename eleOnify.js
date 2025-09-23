@@ -3,29 +3,32 @@ const Context = (function () {
     const handlers = new Map();
     const bindings = new Map();
 
+    cacheBindings();
 
-    let boundElements = getAllBoundElements();
 
-    for (const elem of boundElements) {
-        const data_bind = elem.getAttribute("data-bind");
-        const parsedbindings = parseBindings(data_bind);
+    function cacheBindings() {
+        let boundElements = getAllBoundElements();
 
-        for (const bnd of parsedbindings) {
+        for (const elem of boundElements) {
+            const data_bind = elem.getAttribute("data-bind");
+            const parsedbindings = parseBindings(data_bind);
+            elem.setAttribute('data-grabbed', '');
+            for (const bnd of parsedbindings) {
 
-            for (const key in bnd) {
-                if (Object.prototype.hasOwnProperty.call(bnd, key)) {
-                    const element = bnd[key];
-                    const binding = {};
-                    binding["target"] = elem;
-                    binding["actions"] = element;
-                    addEventBindings(key, binding);
+                for (const key in bnd) {
+                    if (Object.prototype.hasOwnProperty.call(bnd, key)) {
+                        const element = bnd[key];
+                        const binding = {};
+                        binding["target"] = elem;
+                        binding["actions"] = element;
+                        addEventBindings(key, binding);
+                    }
                 }
+
             }
-
         }
+        boundElements = null;
     }
-    boundElements = null;
-
     function raiseEvent(eventName) {
 
         if (!bindings.has(eventName)) {
@@ -79,13 +82,14 @@ const Context = (function () {
     return {
         addHandler,
         handlers,
-        raiseEvent
+        raiseEvent,
+        cacheBindings
 
     };
 })();
 
 function getAllBoundElements() {
-    return document.querySelectorAll('[data-bind]');
+    return document.querySelectorAll('[data-bind]:not([data-grabbed])');
 }
 
 
@@ -184,14 +188,14 @@ function splitTopLevel(str) {
 
     for (let i = 0; i < str.length; i++) {
         let char = str[i];
-        
+
         if (inString) {
             if (char === stringChar && str[i - 1] !== '\\') {
                 inString = false; // خروج از حالت رشته
                 continue; // کوتیشن رو اضافه نمی‌کنیم
             }
             current += char; // کاراکترهای داخل رشته
-        } 
+        }
         else {
             if ((char === '"' || char === "'") && depth === 0) {
                 inString = true;
