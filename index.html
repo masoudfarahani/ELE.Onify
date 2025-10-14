@@ -9,44 +9,86 @@
         .highlight {
             background: yellow !important;
         }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 7fr;
+            grid-template-rows: auto auto;
+            grid-gap: 10px;
+
+            padding: 10px;
+        }
+
+        .grid-container>div {
+            background-color: #f1f1f1;
+            border: 1px solid black;
+            padding: 10px;
+            font-size: 30px;
+            text-align: center;
+        }
     </style>
 </head>
 
 <body>
 
-    <div id="mydiv" data-bind="on event1:customAlert('hello world');
-    on event2 : hide;
-    on event3:show ,setText('new text');
-    on event3: toggleClass('highlight')
-    ">my Content</div>
+    <div class="grid-container">
+        <div>
+            <button onclick="Context.raiseEvent('event1')">Raise event1</button>
+            <button onclick="Context.raiseEvent('event2')">Raise event2</button>
+        </div>
+        <div>
+            <div data-bind="on event1 : hide;on event2 : show;">Hide with event1 and Show with event2</div>
+        </div>
 
-    <div style="display: none;" data-bind="on startAjax:show;on endAjax:hide">
-        Loading...
+        <div>
+            <button onclick="Context.raiseEvent('event3')">Raise event3</button>
+        </div>
+        <div data-bind="on event3 : toggleClass('highlight')">toggle class '.highlight' with event3</div>
+
+
+        <div>
+            <button onclick="Context.raiseEvent('event4')">Raise event4</button>
+        </div>
+        <div data-bind="on event4 : addClass('highlight'),delay(1000)">add Class '.highlight' with event4 after 1000ms
+            delay</div>
+
+        <div>
+            <button onclick="myAjaxCall()">Raise Start/EndLoading event</button>
+        </div>
+        <div>
+            <div data-bind="on startLoading : hide; on endLoading:show">this will hide on startLoading Event and show
+                again on endLoading event </div>
+            <div style="display: none;" data-bind="on startLoading:show;on endLoading:hide">
+                (ajax call) Loading...
+            </div>
+        </div>
+
+        <div>
+            <button onclick="Context.raiseEvent('event5')">Raise event5</button>
+        </div>
+        <div data-bind="on event5 : setText('HelloWorld')">setText To "HelloWorld" with event5</div>
+
+        <div>
+            <button onclick="Context.raiseEvent('event6')">Raise event6</button>
+        </div>
+        <div id="div1" data-bind="on event6 : myCustomFunction()">
+            <small>During event6, the function 'myCustomFunction()' will be called. This function creates a new element, adds it here, and makes it react to event3 (which is triggered by clicking the 'Raise event3' button).</small> </div>
     </div>
-
-    <button onclick="Context.raiseEvent('event2')">hide</button>
-    <button onclick="Context.raiseEvent('event3')">show</button>
-    <button onclick="Context.raiseEvent('event1')">alert</button>
-
-    <button onclick="myAjaxCall()">ajax call</button>
-
-
 
     <script src="eleOnify.js"></script>
     <script>
 
-        Context.addHandler(customAlert);
+        Context.addHandler(myCustomFunction);
 
 
         async function myAjaxCall() {
-            Context.raiseEvent('startAjax')
-            console.log("start ...");
+            Context.raiseEvent('startLoading')
             fetch('https://jsonplaceholder.typicode.com/posts/1')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok ' + response.status);
                     }
-                    return response.json();  
+                    return response.json();
                 })
                 .then(data => {
                     console.log('Data recived :', data);
@@ -54,27 +96,25 @@
                 .catch(error => {
                     console.error('some error occured : ', error);
                 });
-            console.log("start delay ...");
-            await delay(5000);
 
-            Context.raiseEvent('endAjax')
-
+            await delay(2000);
+            Context.raiseEvent('endLoading')
         }
 
         function delay(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
+        function myCustomFunction() {
+            const containerdiv = document.getElementById("div1");
 
-
-        function customAlert(message1) {
-            alert(message1);
-            var elem =document.createElement("div");
-            elem.setAttribute('data-bind','on event2 : hide;on event3:show')
-            elem.textContent="new element";
-            document.body.appendChild(elem);
+            var elem = document.createElement("div");
+            elem.setAttribute('data-bind', 'on event3 : toggleClass(\'highlight\')')
+            elem.textContent = "NewElement That react to event 3 and toggle '.highlight class'";
+            containerdiv.appendChild(elem);
             Context.cacheBindings();
         }
+
     </script>
 
 </body>

@@ -2,7 +2,7 @@ const Context = (function () {
 
     const handlers = new Map();
     const bindings = new Map();
-
+    const delayPattern = /^delay\(\d+\)$/;
     cacheBindings();
 
 
@@ -37,9 +37,50 @@ const Context = (function () {
 
         const eventBindings = bindings.get(eventName)
 
-        for (const binging of eventBindings) {
+        for (const _binding of eventBindings) {
 
-            for (const action of binging.actions) {
+            const anyDelay = hasDelay(_binding.actions);
+            if (anyDelay)
+                callActionWithDelay(_binding, anyDelay)
+            else
+                callActionsImmidiatly(_binding)
+        }
+    }
+
+    function hasDelay(bindingAcctions) {
+        const result = bindingAcctions.find(c => delayPattern.test(c));
+        return result;
+    }
+
+    function callActionsImmidiatly(binding) {
+        for (const action of binding.actions) {
+
+            let calls = parseFunctionCall(action);
+
+            if (handlers.has(calls.functionName)) {
+                let hdlr = handlers.get(calls.functionName);
+                hdlr(...calls.args);
+                hdlr = null;
+                continue;
+            }
+
+            executeAction(calls.functionName, calls.args, binding.target);
+            calls = null;
+        }
+    }
+
+    function callActionWithDelay(binding, delayfunction) {
+
+        let delayfunc = parseFunctionCall(delayfunction);
+
+        const delayValue = delayfunc.args[0];
+
+        setTimeout(() => {
+
+            for (const action of binding.actions) {
+
+                if (action.match(delayPattern))
+                    continue;
 
                 let calls = parseFunctionCall(action);
 
@@ -50,12 +91,14 @@ const Context = (function () {
                     continue;
                 }
 
-                executeAction(calls.functionName, calls.args, binging.target);
+                executeAction(calls.functionName, calls.args, binding.target);
                 calls = null;
             }
-        }
-    }
 
+        }, delayValue);
+
+
+    }
 
     function addHandler(handler) {
         if (typeof handler !== "function") {
@@ -76,6 +119,7 @@ const Context = (function () {
         if (!bindings.has(key)) {
             bindings.set(key, []);
         }
+
         bindings.get(key).push(value);
     }
 
