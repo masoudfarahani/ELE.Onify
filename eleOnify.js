@@ -29,7 +29,7 @@ const Context = (function () {
         }
         boundElements = null;
     }
-    function raiseEvent(eventName) {
+    function raiseEvent(eventName, eventContext) {
 
         if (!bindings.has(eventName)) {
             return;
@@ -41,9 +41,9 @@ const Context = (function () {
 
             const anyDelay = hasDelay(_binding.actions);
             if (anyDelay)
-                callActionWithDelay(_binding, anyDelay)
+                callActionWithDelay(_binding, anyDelay, eventContext)
             else
-                callActionsImmidiatly(_binding)
+                callActionsImmidiatly(_binding, eventContext)
         }
     }
 
@@ -52,24 +52,44 @@ const Context = (function () {
         return result;
     }
 
-    function callActionsImmidiatly(binding) {
+    function callActionsImmidiatly(binding, eventContext) {
         for (const action of binding.actions) {
 
             let calls = parseFunctionCall(action);
+            const args = calls.args.map(c => {
+                if (c.startsWith("ctx.")) {
+                    const val = getValueByPath(eventContext, c.replace("ctx.", ""));
+                    return val;
+                } else {
+                    return c;
+                }
+            });
 
             if (handlers.has(calls.functionName)) {
                 let hdlr = handlers.get(calls.functionName);
-                hdlr(...calls.args);
+                hdlr(...args);
                 hdlr = null;
                 continue;
             }
 
-            executeAction(calls.functionName, calls.args, binding.target);
+            executeAction(calls.functionName, args, binding.target);
             calls = null;
         }
     }
 
-    function callActionWithDelay(binding, delayfunction) {
+    function getValueByPath(obj, path) {
+        const result = path.split(/[\.\[\]]/)
+            .filter(part => part !== '')
+            .reduce((current, key) => {
+                const tmp = current && current[key] !== undefined ? current[key] : undefined;
+
+                return tmp;
+            }, obj);
+
+        return result;
+    }
+
+    function callActionWithDelay(binding, delayfunction, eventContext) {
 
         let delayfunc = parseFunctionCall(delayfunction);
 
@@ -84,14 +104,25 @@ const Context = (function () {
 
                 let calls = parseFunctionCall(action);
 
+
+                const args = calls.args.map(c => {
+                    if (c.startsWith("ctx.")) {
+                        const val = getValueByPath(eventContext, c.replace("ctx.", ""));
+                        return val;
+                    } else {
+                        return c;
+                    }
+                });
+
+
                 if (handlers.has(calls.functionName)) {
                     let hdlr = handlers.get(calls.functionName);
-                    hdlr(...calls.args);
+                    hdlr(...args);
                     hdlr = null;
                     continue;
                 }
 
-                executeAction(calls.functionName, calls.args, binding.target);
+                executeAction(calls.functionName, args, binding.target);
                 calls = null;
             }
 
@@ -235,16 +266,16 @@ function splitTopLevel(str) {
 
         if (inString) {
             if (char === stringChar && str[i - 1] !== '\\') {
-                inString = false; // خروج از حالت رشته
-                continue; // کوتیشن رو اضافه نمی‌کنیم
+                inString = false; 
+                continue; 
             }
-            current += char; // کاراکترهای داخل رشته
+            current += char; 
         }
         else {
             if ((char === '"' || char === "'") && depth === 0) {
                 inString = true;
                 stringChar = char;
-                continue; // کوتیشن شروع رو اضافه نکن
+                continue; 
             }
             if (char === '(') depth++;
             else if (char === ')') depth--;
