@@ -41,42 +41,59 @@ const Context = (function () {
 
             const anyDelay = hasDelay(_binding.actions);
             if (anyDelay)
-                callActionWithDelay(_binding, anyDelay, eventContext)
+                handleEventWithDelay(_binding, anyDelay, eventContext)
             else
-                callActionsImmidiatly(_binding, eventContext)
+                handleEventImmidiatly(_binding, eventContext)
         }
+    }
+
+
+    function handleEventImmidiatly(binding, eventContext) {
+        for (const action of binding.actions) {
+            callIndividualAction(action, binding.target, eventContext)
+        }
+    }
+
+
+    function handleEventWithDelay(binding, delayfunction, eventContext) {
+
+        let delayfunc = parseFunctionCall(delayfunction);
+
+        const delayValue = delayfunc.args[0];
+
+        setTimeout(() => {
+
+            for (const action of binding.actions) {
+                if (action.match(delayPattern))
+                    continue;
+                callIndividualAction(action, binding.target, eventContext)
+            }
+
+        }, delayValue);
+
+    }
+
+
+    function callIndividualAction(action, target, eventContext) {
+        const calls = parseFunctionCall(action);
+
+        const args = getCallArguments(calls, eventContext);
+
+        if (handlers.has(calls.functionName)) {
+            let hdlr = handlers.get(calls.functionName);
+            hdlr(...args);
+            hdlr = null;
+            return
+        }
+
+        executeAction(calls.functionName, args, target);
     }
 
     function hasDelay(bindingAcctions) {
         const result = bindingAcctions.find(c => delayPattern.test(c));
         return result;
     }
-
-    function callActionsImmidiatly(binding, eventContext) {
-        for (const action of binding.actions) {
-
-            let calls = parseFunctionCall(action);
-            const args = calls.args.map(c => {
-                if (c.startsWith("ctx.")) {
-                    const val = getValueByPath(eventContext, c.replace("ctx.", ""));
-                    return val;
-                } else {
-                    return c;
-                }
-            });
-
-            if (handlers.has(calls.functionName)) {
-                let hdlr = handlers.get(calls.functionName);
-                hdlr(...args);
-                hdlr = null;
-                continue;
-            }
-
-            executeAction(calls.functionName, args, binding.target);
-            calls = null;
-        }
-    }
-
+    
     function getValueByPath(obj, path) {
         const result = path.split(/[\.\[\]]/)
             .filter(part => part !== '')
@@ -89,46 +106,22 @@ const Context = (function () {
         return result;
     }
 
-    function callActionWithDelay(binding, delayfunction, eventContext) {
 
-        let delayfunc = parseFunctionCall(delayfunction);
+    function getCallArguments(funcCallInfo, eventContext) {
+        let args = [];
+        if (funcCallInfo.args !== undefined && funcCallInfo.args != "") {
 
-        const delayValue = delayfunc.args[0];
-
-        setTimeout(() => {
-
-            for (const action of binding.actions) {
-
-                if (action.match(delayPattern))
-                    continue;
-
-                let calls = parseFunctionCall(action);
-
-
-                const args = calls.args.map(c => {
-                    if (c.startsWith("ctx.")) {
-                        const val = getValueByPath(eventContext, c.replace("ctx.", ""));
-                        return val;
-                    } else {
-                        return c;
-                    }
-                });
-
-
-                if (handlers.has(calls.functionName)) {
-                    let hdlr = handlers.get(calls.functionName);
-                    hdlr(...args);
-                    hdlr = null;
-                    continue;
+            args = funcCallInfo.args.map(c => {
+                if (c.startsWith("ctx.")) {
+                    const val = getValueByPath(eventContext, c.replace("ctx.", ""));
+                    return val;
+                } else {
+                    return c;
                 }
+            });
+        }
 
-                executeAction(calls.functionName, args, binding.target);
-                calls = null;
-            }
-
-        }, delayValue);
-
-
+        return args;
     }
 
     function addHandler(handler) {
@@ -266,16 +259,16 @@ function splitTopLevel(str) {
 
         if (inString) {
             if (char === stringChar && str[i - 1] !== '\\') {
-                inString = false; 
-                continue; 
+                inString = false;
+                continue;
             }
-            current += char; 
+            current += char;
         }
         else {
             if ((char === '"' || char === "'") && depth === 0) {
                 inString = true;
                 stringChar = char;
-                continue; 
+                continue;
             }
             if (char === '(') depth++;
             else if (char === ')') depth--;
