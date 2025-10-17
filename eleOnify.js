@@ -14,19 +14,25 @@ const Context = (function () {
             const parsedbindings = parseBindings(data_bind);
             elem.setAttribute('data-grabbed', '');
             for (const bnd of parsedbindings) {
-
                 for (const key in bnd) {
                     if (Object.prototype.hasOwnProperty.call(bnd, key)) {
-                        const element = bnd[key];
+                        const action = bnd[key];
                         const binding = {};
                         binding["target"] = elem;
-                        binding["actions"] = element;
+                        binding["actions"] = action;
                         addEventBindings(key, binding);
                     }
                 }
 
             }
         }
+
+        document.addEventListener("DOMContentLoaded", (event) => {
+            raiseEvent("autoRaise", {});
+        });
+
+        raiseEvent("immediatRaise", {});
+
         boundElements = null;
     }
     function raiseEvent(eventName, eventContext) {
@@ -93,7 +99,7 @@ const Context = (function () {
         const result = bindingAcctions.find(c => delayPattern.test(c));
         return result;
     }
-    
+
     function getValueByPath(obj, path) {
         const result = path.split(/[\.\[\]]/)
             .filter(part => part !== '')

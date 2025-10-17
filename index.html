@@ -80,16 +80,25 @@
         <div>
             <button onclick="Context.raiseEvent('event7',event7Ctx)">Raise event7</button>
         </div>
-        <div data-bind="on event7 : setText(ctx.address[1].city),delay(1000)">setText with EventContext(ctx.address[1].city) with event 7</div>
+        <div data-bind="on event7 : setText(ctx.address[1].city),delay(1000);">setText with
+            EventContext(ctx.address[1].city) with event 7</div>
+        <div>Auto Raise event after DOMContentLoaded</div>
+        <div>
+            <div data-bind="on autoRaise: hide,delay(3000);">hide automatically after 3000ms when DOMContentLoaded</div>
+        </div>
+
+        <div>Raise Immediatly On Caching binding</div>
+        <div>
+            <div data-bind="on immediatRaise: hide,delay(3000);">hide automaticly after 3000ms Immediatly(not care aboute DOMContentLoaded)</div>
+        </div>
     </div>
 
     <script src="eleOnify.js"></script>
     <script>
-
         Context.addHandler(myCustomFunction);
 
         const event7Ctx = {
-            name: "ali",
+            name: "your name",
             familly: {
                 mother: "mother name",
                 father: "father name"
@@ -106,6 +115,7 @@
 
             ]
         };
+
         async function myAjaxCall() {
             Context.raiseEvent('startLoading')
             fetch('https://jsonplaceholder.typicode.com/posts/1')
