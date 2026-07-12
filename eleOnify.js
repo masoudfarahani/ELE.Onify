@@ -176,16 +176,20 @@ function executeAction(action, args, elem) {
             elem.style.display = 'none';
             break;
         case 'addClass':
-            elem.classList.add(args[0]);
+           
+            elem.classList.add(...args);
             break;
         case 'removeClass':
-            elem.classList.remove(args[0]);
+            elem.classList.remove(...args);
             break;
         case 'toggleClass':
             elem.classList.toggle(args[0]);
             break;
         case 'setText':
             elem.textContent = args[0] || '';
+            break;
+        case 'selfRemove':
+            elem.remove();
             break;
     }
 }
